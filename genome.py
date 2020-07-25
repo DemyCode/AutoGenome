@@ -31,6 +31,10 @@ class Genome:
             nodeoutput = Node(visited=False, value=0.0, role='output', node_id=self.node_id)
             self.node_id += 1
             self.nodes.append(nodeoutput)
+        for i in range(input_size):
+            for j in range(output_size):
+                connection = Connection(i, input_size + j, uniform(-0.01, 0.01))
+                self.connections.append(connection)
 
     def forward(self, input_layer=None):
         # Initialization
@@ -43,12 +47,16 @@ class Genome:
         input_nodes = [x for x in self.nodes if x.role == 'input']
         for i in range(self.input_size):
             input_nodes[i].value = input_layer[i]
-            queue.append(input_nodes[i])
             input_nodes[i].visited = True
+            queue += [x.son for x in self.connections if x.father == input_nodes[i].node_id]
+
+        queue = np.unique(np.array(queue)).tolist()
+        queue = [self.find_node(node_id) for node_id in queue]
 
         # Selection
         while len(queue) != 0:
             cur_node: Node = queue.pop()
+            cur_node.visited = True
             # print(cur_node)
             fathers = [(self.find_node(x.father), x.weight) for x in self.connections if x.son == cur_node.node_id]
 
@@ -63,22 +71,22 @@ class Genome:
             sons = [self.find_node(x.son) for x in self.connections if x.father is cur_node.node_id]
             for son in sons:
                 if not son.visited:
-                    son.visited = True
                     queue.append(son)
 
         # Return Values
         return [x.value for x in self.nodes if x.role == 'output']
 
-    def mutate(self):
+    def mutate(self, deepness):
         newgen = self.copy()
+        initial_probability = 0.01
 
-        if random() < 0.01:
+        if random() < initial_probability * deepness:
             randnodea = newgen.nodes[randrange(0, len(newgen.nodes))]
             randnodeb = newgen.nodes[randrange(0, len(newgen.nodes))]
             newgen.connections.append(Connection(father=randnodea.node_id, son=randnodeb.node_id,
-                                                 weight=uniform(-0.01, 0.01)))
+                                                 weight=uniform(-initial_probability * deepness, initial_probability * deepness)))
 
-        if random() < 0.01 and len(newgen.connections) != 0:
+        if random() < initial_probability * deepness and len(newgen.connections) != 0:
             newnode = Node(visited=False, value=0.0, role='hidden', node_id=newgen.node_id)
             newgen.nodes.append(newnode)
             newgen.node_id += 1
@@ -89,7 +97,7 @@ class Genome:
             newgen.connections.append(seccon)
 
         for x in newgen.connections:
-            x.weight += uniform(-0.01, 0.01)
+            x.weight += uniform(-initial_probability, initial_probability)
 
         return newgen
 
@@ -123,3 +131,7 @@ class Genome:
 
     def size(self):
         return len(self.nodes), len(self.connections)
+
+    def cleaner(self):
+        for node in self.nodes:
+            node.value = 0.0
