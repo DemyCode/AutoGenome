@@ -1,163 +1,34 @@
-from genome import Genome
-from autogenome import Fitter
+from keras.layers import Input, Lambda, Dense
+from keras.models import Model
+from keras.utils import plot_model
 import numpy as np
-import gym
-from genome import sigmoid
-from scipy.special import softmax
 
+def build():
+    input = Input((1,), name="input")
+    a = Lambda(lambda x: 2 * x[:, :], name='a')
+    b = Lambda(lambda x: 2 * x[:, :], name='b')
+    output = Lambda(lambda x: 2 * x[:, :], name='output')
 
-def xorevaluate(genome: Genome):
-    table = [[[0, 0], [0]],
-             [[0, 1], [1]],
-             [[1, 0], [1]],
-             [[1, 1], [0]]]
-    score = 0.0
-    for experience in table:
-        x, y = experience[0], experience[1]
-        output = genome.forward(x)
-        score += abs(output[0] - y[0])
-    return score
+    o = a(input)
+    o = b(o)
+    o = a(o)
+    o = output(o)
 
-
-def squarerooteval(genome: Genome):
-    score = 0.0
-    table = []
-    for i in range(100):
-        table.append([[i], [np.sqrt(i)]])
-    for experience in table:
-        x, y = experience[0], experience[1]
-        output = genome.forward(x)
-        score += abs(output[0] - y[0])
-    return score
-
-
-def squareeval(genome: Genome):
-    table = []
-    for i in range(100):
-        table.append([[i], [i * i]])
-    score = 0
-    for experience in table:
-        x, y = experience[0], experience[1]
-        output = genome.forward(x)
-        score += abs(output[0] - y[0])
-    return score
-
-
-def experience1():
-    # Experience 1
-    init_genome = Genome(input_size=2, output_size=1, nodes=[], connections=[])
-    fitter = Fitter(genome=init_genome, evaluate=xorevaluate)
-    fitter.fit(episode=5000, scorebreak=0.001, timebreak=120)
-    new_genome = fitter.genome
-    new_genome.cleaner()
-    table = [[[0, 0], [0]],  # [[[x0, x1], [y0, y1, y2]],
-             [[0, 1], [1]],  # ... ]
-             [[1, 0], [1]],
-             [[1, 1], [0]]]
-    score = 0
-    for experience in table:
-        x, y = experience[0], experience[1]
-        output = new_genome.forward(x)
-        score += abs(output[0] - y[0])
-        print(x, ' : ', output)
-    print('score : ', score)
-    print(new_genome.grapher())
-
-
-def experience2():
-    # Experience 2
-    init_genome = Genome(input_size=1, output_size=1, nodes=[], connections=[])
-    fitter = Fitter(genome=init_genome, evaluate=squarerooteval)
-    fitter.fit(episode=5000, scorebreak=0.1, timebreak=300, mode='min')
-    new_genome = fitter.genome
-    new_genome.cleaner()
-    table = []
-    for i in range(100):
-        table.append([[i], [np.sqrt(i)]])
-    score = 0
-    for experience in table:
-        x, y = experience[0], experience[1]
-        output = new_genome.forward(x)
-        score += abs(output[0] - y[0])
-        print(x, ' : ', output)
-    print('score : ', score)
-    print(new_genome.grapher())
-
-
-def experience3():
-    # Experience 3
-    init_genome = Genome(input_size=1, output_size=1, nodes=[], connections=[])
-    fitter = Fitter(genome=init_genome, evaluate=squareeval)
-    fitter.fit(episode=5000, scorebreak=0.1, timebreak=300, mode='min')
-    new_genome = fitter.genome
-    new_genome.cleaner()
-    table = []
-    for i in range(0, 100):
-        table.append([[i], [i * i]])
-    score = 0
-    for experience in table:
-        x, y = experience[0], experience[1]
-        output = new_genome.forward(x)
-        score += abs(output[0] - y[0])
-        print(x, ' : ', output)
-    print('score : ', score)
-    print(new_genome.grapher())
-
-
-import random
-
-
-def lunareval(genome: Genome):
-    env = gym.make('LunarLander-v2')
-    number_of_episode = 20
-    total_reward = 0
-    for i_episode in range(number_of_episode):
-        observation = env.reset()
-        episode_reward = 0
-        for t in range(100):
-            # env.render()
-            forward_values = genome.forward(observation)
-            softmax_values = softmax(forward_values)
-            # action_vector = np.array(np.round(softmax_values))
-            action = np.random.choice(np.arange(4), p=softmax_values)
-            observation, reward, done, info = env.step(int(action))
-            if done:
-                break
-            episode_reward += reward
-        total_reward += episode_reward
-    env.close()
-    print(total_reward / number_of_episode)
-    return total_reward / number_of_episode
-
-
-def experience4():
-    genome = Genome(input_size=8, output_size=4)
-    fitter = Fitter(genome, evaluate=lunareval)
-    new_genome = fitter.fit(episode=50, timebreak=600, mode='max')
-    new_genome.cleaner()
-    env = gym.make('LunarLander-v2')
-    total_reward = 0
-    number_of_episode = 20
-    for i_episode in range(number_of_episode):
-        observation = env.reset()
-        episode_reward = 0
-        for t in range(100):
-            env.render()
-            forward_values = new_genome.forward(observation)
-            softmax_values = softmax(forward_values)
-            # action_vector = np.array(np.round(softmax_values))
-            action = np.random.choice(np.arange(4), p=softmax_values)
-            observation, reward, done, info = env.step(int(action))
-            if done:
-                break
-            episode_reward += reward
-        total_reward += episode_reward
-    env.close()
-    print('Testing score is :', total_reward / number_of_episode)
+    model = Model(input, o)
+    model.compile()
+    model.summary()
+    return model
 
 
 def main():
-    experience2()
+    model = build()
+    plot_model(model, "my_first_model.png")
+    data = np.reshape(np.ones(1), (1, 1))
+    print(data)
+    res = model.predict(data)
+    print("Result is : {}".format(res))
+    res = model.predict(data)
+    print("Result is : {}".format(res))
 
 
 if __name__ == '__main__':
