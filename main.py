@@ -4,18 +4,23 @@ import numpy as np
 import gym
 from genome import sigmoid
 from scipy.special import softmax
+from random import shuffle
 
 
 def xorevaluate(genome: Genome):
-    table = [[[0, 0], [0]],
-             [[0, 1], [1]],
-             [[1, 0], [1]],
-             [[1, 1], [0]]]
+    genome.cleaner()
+    table = [([0, 0], [0]),
+             ([0, 1], [1]),
+             ([1, 0], [1]),
+             ([1, 1], [0])]
     score = 0.0
-    for experience in table:
-        x, y = experience[0], experience[1]
-        output = genome.forward(x)
-        score += abs(output[0] - y[0])
+    episodes = 20
+    for _ in range(episodes):
+        shuffle(table)
+        for experience in table:
+            x, y = experience[0], experience[1]
+            output = genome.forward(x)
+            score += abs(output[0] - y[0])
     return score
 
 
@@ -45,23 +50,24 @@ def squareeval(genome: Genome):
 
 def experience1():
     # Experience 1
-    init_genome = Genome(input_size=2, output_size=1, nodes=[], connections=[])
-    fitter = Fitter(genome=init_genome, evaluate=xorevaluate)
-    fitter.fit(episode=5000, scorebreak=0.001, timebreak=120)
-    new_genome = fitter.genome
-    new_genome.cleaner()
-    table = [[[0, 0], [0]],  # [[[x0, x1], [y0, y1, y2]],
-             [[0, 1], [1]],  # ... ]
-             [[1, 0], [1]],
-             [[1, 1], [0]]]
+    genome = Genome(input_size=2, output_size=1, nodes=[], connections=[])
+    fitter = Fitter(genome=genome, evaluate=xorevaluate)
+    genome = fitter.fit(episode=5000, timebreak=300)
+    genome.cleaner()
+    table = [([0, 0], [0]),  # [([x0, x1], [y0, y1, y2]),
+             ([0, 1], [1]),  # ... ]
+             ([1, 0], [1]),
+             ([1, 1], [0])]
     score = 0
-    for experience in table:
-        x, y = experience[0], experience[1]
-        output = new_genome.forward(x)
-        score += abs(output[0] - y[0])
-        print(x, ' : ', output)
+    for _ in range(20):
+        shuffle(table)
+        for experience in table:
+            x, y = experience[0], experience[1]
+            output = genome.forward(x)
+            score += abs(output[0] - y[0])
+            print(x, ' : ', output)
     print('score : ', score)
-    print(new_genome.grapher())
+    print(genome.print_graph())
 
 
 def experience2():
@@ -157,7 +163,7 @@ def experience4():
 
 
 def main():
-    experience2()
+    experience1()
 
 
 if __name__ == '__main__':

@@ -2,6 +2,7 @@ from genome import Genome
 from time import sleep
 import numpy as np
 from time import time
+from typing import List
 
 
 class Fitter:
@@ -9,7 +10,7 @@ class Fitter:
         if children is None:
             children = []
         self.genome: Genome = genome
-        self.children = children
+        self.children: List[Fitter] = children
         self.score = None
         self.evaluate = evaluate
 
@@ -22,48 +23,45 @@ class Fitter:
     def grow(self):
         for child in self.children:
             child.grow()
-        number_of_child = len(self.children)
-        newfitter = Fitter(genome=self.genome.mutate(number_of_child), children=None,
-                           evaluate=self.evaluate)
-        self.children.append(newfitter)
+        explorer = Fitter(genome=self.genome.mutate(), evaluate=self.evaluate)
+        self.children.append(explorer)
+        # suppressor = Fitter(genome=self.genome.suppressor(), evaluate=self.evaluate)
+        # self.children.append(suppressor)
 
     def survival(self, mode):
         for child in self.children:
             child.survival(mode)
-        fittestgenome = self.genome
-        fittestscore = self.score
         found = False
         for child in self.children:
-            if (mode == 'min' and child.score < fittestscore) or (mode == 'max' and child.score > fittestscore):
-                fittestgenome = child.genome
-                fittestscore = child.score
+            if (mode == 'min' and child.score < self.score) or (mode == 'max' and child.score > self.score):
+                self.genome = child.genome
+                self.score = child.score
                 found = True
-
+            if self.score == child.score and child.genome.size() < self.genome.size():
+                self.genome = child.genome
+                self.score = child.score
+                found = True
         if found:
-            self.genome = fittestgenome
-            self.score = fittestscore
             self.children = []
 
-    def fit(self, episode=1000, scorebreak=None, timebreak=300, mode='min'):
+    def fit(self, episode=1000, scorebreak=None, timebreak=None, mode='min'):
         start_time = time()
         for i in range(episode):
-            # if (i % 100 == 0):
-            print('==============')
-            print('episode : ', i)
-            print('familiy size : ', self.family_size())
-            node_size, conn_size = self.genome.size()
-            # if (i % 100 == 0):
-            print('Father nodes : ', node_size, 'Father Connections : ', conn_size, 'Father Childs : ', len(self.children))
-            print('seconds : ', time() - start_time)
             self.set_score()
             self.survival(mode)
             self.grow()
-            # if (i % 100 == 0):
+            print('==============')
+            print('episode : ', i)
+            print('familiy size : ', self.family_size())
+            node_size, conn_size = self.genome.node_size(), self.genome.conn_size()
+            print('Genome odes : ', node_size, 'Genome Connections : ', conn_size)
+            print('seconds : ', time() - start_time)
             print('score : ', self.score)
-            if time() - start_time > timebreak:
-                return self.genome
+            print(self.genome.print_graph())
+            if timebreak is not None and time() - start_time > timebreak:
+                break
             if scorebreak is not None and self.score < scorebreak:
-                return self.genome
+                break
         return self.genome
 
     def family_size(self):
