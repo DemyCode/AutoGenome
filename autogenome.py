@@ -13,6 +13,13 @@ class Fitter:
         self.children: List[Fitter] = children
         self.score = None
         self.evaluate = evaluate
+        self.history = {'familysizes': [],
+                        'genomesizes': [],
+                        'nodesizes': [],
+                        'connsizes': [],
+                        'scores': [],
+                        'episodetimes': [],
+                        'episodes': 0}
 
     def set_score(self):
         if self.score is None:
@@ -25,8 +32,6 @@ class Fitter:
             child.grow()
         explorer = Fitter(genome=self.genome.mutate(), evaluate=self.evaluate)
         self.children.append(explorer)
-        # suppressor = Fitter(genome=self.genome.suppressor(), evaluate=self.evaluate)
-        # self.children.append(suppressor)
 
     def survival(self, mode):
         for child in self.children:
@@ -37,10 +42,10 @@ class Fitter:
                 self.genome = child.genome
                 self.score = child.score
                 found = True
-            if self.score == child.score and child.genome.size() < self.genome.size():
-                self.genome = child.genome
-                self.score = child.score
-                found = True
+            # elif self.score == child.score and child.genome.size() < self.genome.size():
+            #     self.genome = child.genome
+            # self.score = child.score
+            # found = True
         if found:
             self.children = []
 
@@ -50,6 +55,15 @@ class Fitter:
             self.set_score()
             self.survival(mode)
             self.grow()
+
+            # history
+            self.history['familysizes'].append(self.family_size())
+            self.history['genomesizes'].append(self.genome.size())
+            self.history['nodesizes'].append(self.genome.node_size())
+            self.history['connsizes'].append(self.genome.conn_size())
+            self.history['scores'].append(self.score)
+            self.history['episodetimes'].append(time() - start_time)
+
             print('==============')
             print('episode : ', i)
             print('familiy size : ', self.family_size())
@@ -60,8 +74,11 @@ class Fitter:
             print(self.genome.print_graph())
             if timebreak is not None and time() - start_time > timebreak:
                 break
-            if scorebreak is not None and self.score < scorebreak:
-                break
+            if scorebreak is not None:
+                if mode == 'max' and self.score > scorebreak:
+                    break
+                if mode == 'min' and self.score < scorebreak:
+                    break
         return self.genome
 
     def family_size(self):
