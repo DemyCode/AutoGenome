@@ -20,7 +20,7 @@ def xorevaluate(genome: Genome):
         shuffle(table)
         for experience in table:
             x, y = experience[0], experience[1]
-            output = genome.newforward(x)
+            output = genome.forward(x)
             score += abs(output[0] - y[0])
     return score
 
@@ -57,10 +57,10 @@ from random import randrange, uniform, randint
 def experience1():
     # Experience 1
     genome = Genome(input_size=2, output_size=1)
-    genome.nodes += [Node(), Node(), Node()]
-    genome.connections += [Connection(0, 3, 0.0), Connection(0, 4, 0.0), Connection(0, 5, 0.0),
-                           Connection(1, 3, 0.0), Connection(1, 4, 0.0), Connection(1, 5, 0.0),
-                           Connection(3, 2, 0.0), Connection(4, 2, 0.0), Connection(5, 2, 0.0)]
+    # genome.nodes += [Node(), Node(), Node()]
+    # genome.connections += [Connection(0, 3, 0.0), Connection(0, 4, 0.0), Connection(0, 5, 0.0),
+    #                        Connection(1, 3, 0.0), Connection(1, 4, 0.0), Connection(1, 5, 0.0),
+    #                        Connection(3, 2, 0.0), Connection(4, 2, 0.0), Connection(5, 2, 0.0)]
     fitter = Fitter(genome=genome, evaluate=xorevaluate)
     genome = fitter.fit(episode=5000, timebreak=300, scorebreak=0.1)
     genome.cleaner()
@@ -73,7 +73,7 @@ def experience1():
         shuffle(table)
         for experience in table:
             x, y = experience[0], experience[1]
-            output = genome.newforward(x)
+            output = genome.forward(x)
             score += abs(output[0] - y[0])
             print(x, ' : ', output)
     print('score : ', score)
