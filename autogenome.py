@@ -42,16 +42,17 @@ class Fitter:
                 self.genome = child.genome
                 self.score = child.score
                 found = True
-            # elif self.score == child.score and child.genome.size() < self.genome.size():
-            #     self.genome = child.genome
-            # self.score = child.score
-            # found = True
+            elif self.score == child.score and child.genome.size() < self.genome.size():
+                self.genome = child.genome
+                self.score = child.score
+                found = True
         if found:
             self.children = []
 
     def fit(self, episode=1000, scorebreak=None, timebreak=None, mode='min'):
-        start_time = time()
+        gtime = time()
         for i in range(episode):
+            epochtime = time()
             self.set_score()
             self.survival(mode)
             self.grow()
@@ -62,17 +63,17 @@ class Fitter:
             self.history['nodesizes'].append(self.genome.node_size())
             self.history['connsizes'].append(self.genome.conn_size())
             self.history['scores'].append(self.score)
-            self.history['episodetimes'].append(time() - start_time)
+            self.history['episodetimes'].append(time() - epochtime)
 
             print('==============')
             print('episode : ', i)
             print('familiy size : ', self.family_size())
             node_size, conn_size = self.genome.node_size(), self.genome.conn_size()
             print('Genome odes : ', node_size, 'Genome Connections : ', conn_size)
-            print('seconds : ', time() - start_time)
+            print('seconds : ', time() - gtime)
             print('score : ', self.score)
             print(self.genome.print_graph())
-            if timebreak is not None and time() - start_time > timebreak:
+            if timebreak is not None and time() - gtime > timebreak:
                 break
             if scorebreak is not None:
                 if mode == 'max' and self.score > scorebreak:

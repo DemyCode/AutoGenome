@@ -57,10 +57,10 @@ from random import randrange, uniform, randint
 def experience1():
     # Experience 1
     genome = Genome(input_size=2, output_size=1)
-    # genome.nodes += [Node(), Node(), Node()]
-    # genome.connections += [Connection(0, 3, 0.0), Connection(0, 4, 0.0), Connection(0, 5, 0.0),
-    #                        Connection(1, 3, 0.0), Connection(1, 4, 0.0), Connection(1, 5, 0.0),
-    #                        Connection(3, 2, 0.0), Connection(4, 2, 0.0), Connection(5, 2, 0.0)]
+    genome.nodes += [Node(), Node(), Node()]
+    genome.connections += [Connection(0, 3, 0.0), Connection(0, 4, 0.0), Connection(0, 5, 0.0),
+                           Connection(1, 3, 0.0), Connection(1, 4, 0.0), Connection(1, 5, 0.0),
+                           Connection(3, 2, 0.0), Connection(4, 2, 0.0), Connection(5, 2, 0.0)]
     fitter = Fitter(genome=genome, evaluate=xorevaluate)
     genome = fitter.fit(episode=5000, timebreak=300, scorebreak=0.1)
     genome.cleaner()
@@ -78,15 +78,14 @@ def experience1():
             print(x, ' : ', output)
     print('score : ', score)
     print(genome.print_graph())
-    episodes = len(fitter.history['scores'])
-    plt.plot(fitter.history['scores'], label='scores')
-    plt.show()
-    plt.plot(fitter.history['familysizes'], label='familysizes')
-    mean = [np.mean(fitter.history['familysizes']) for _ in range(episodes)]
-    plt.plot(mean, label='familymean')
-    plt.show()
-    plt.plot(fitter.history['episodetimes'], label='episodetimes')
-    plt.show()
+    criterions = ['scores', 'familysizes', 'episodetimes']
+    for crit in criterions:
+        plt.plot(fitter.history[crit], label=crit)
+        mean = [np.mean(fitter.history[crit]) for _ in range(len(fitter.history[crit]))]
+        plt.plot(mean, label=crit + '_mean')
+        plt.xlabel('episode')
+        plt.ylabel(crit)
+        plt.show()
 
 
 def experience2():

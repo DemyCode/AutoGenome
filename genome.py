@@ -32,23 +32,22 @@ class Genome:
         self.nodes: List[Node] = nodes
         self.connections: List[Connection] = connections
         for i in range(input_size):
-            nodeinput = Node(value=0.0, role='input')
-            self.nodes.append(nodeinput)
+            self.nodes.append(Node(value=0.0, role='input'))
         for i in range(output_size):
-            nodeoutput = Node(value=0.0, role='output')
-            self.nodes.append(nodeoutput)
-        for i in [i for i, x in enumerate(self.nodes) if x.role == 'input']:
-            for j in [j for j, x in enumerate(self.nodes) if x.role == 'output']:
-                self.connections.append(Connection(i, j, 0.0))
+            self.nodes.append(Node(value=0.0, role='output'))
+        # lr = 1 / 100
+        # for i in [i for i, x in enumerate(self.nodes) if x.role == 'input']:
+        #     for j in [j for j, x in enumerate(self.nodes) if x.role == 'output']:
+        #        self.connections.append(Connection(i, j, uniform(2 * -lr, 2 * lr)))
 
-    def expect_value(self, cur_id, trace):
+    def _expect_value(self, cur_id, trace):
         if trace[cur_id] or self.nodes[cur_id].role == 'input':
             return self.nodes[cur_id].value
         trace[cur_id] = True
         result = 0.0
         fathers_id_weights = [(conn.left_id, conn.weight) for conn in self.connections if conn.right_id == cur_id]
         for father_id, weight in fathers_id_weights:
-            result += weight * self.expect_value(father_id, trace)
+            result += weight * self._expect_value(father_id, trace)
         result = leaky_relu(result) if self.nodes[cur_id].role != 'output' else result
         return result
 
@@ -60,24 +59,20 @@ class Genome:
             node.value = input_layer[i]
         for i, node in [(i, node) for i, node in enumerate(self.nodes) if node.role == 'output']:
             trace = [False] * len(self.nodes)
-            node.value = self.expect_value(i, trace)
+            node.value = self._expect_value(i, trace)
         return [x.value for x in self.nodes if x.role == 'output']
 
     def mutate(self):
         newgen = self.copy()
 
-        def pognegGD() -> float:
-            lr = 1 / 100
-            modifier = [2 * -lr, -lr, 0.0, lr, 2 * lr]
-            return modifier[randrange(0, len(modifier))]
-
         initial_probability = 1/50
+        lr = 1 / 100
         # mutate
         if random() < initial_probability:
             leftnodeid = randrange(0, len(newgen.nodes))
             rightnodeid = randrange(0, len(newgen.nodes))
             newgen.connections.append(Connection(left_id=leftnodeid, right_id=rightnodeid,
-                                                 weight=pognegGD()))
+                                                 weight=uniform(2 * -lr, 2 * lr)))
         if random() < initial_probability and len(newgen.connections) != 0:
              randcon = newgen.connections.pop(randrange(0, len(newgen.connections)))
              newnode = Node()
@@ -92,9 +87,12 @@ class Genome:
         # if len(newgen.connections) != 0:
         #     newgen.connections[randrange(0, len(newgen.connections))].weight += pognegGD()
 
+        if random() < initial_probability / 2 and len(newgen.connections) != 0:
+            newgen.connections.pop(randrange(0, len(newgen.connections)))
+
         # Best Version
         for conn in newgen.connections:
-            conn.weight += pognegGD()
+            conn.weight += uniform(2 * -lr, 2 * lr)
 
         return newgen
 
@@ -115,7 +113,7 @@ class Genome:
         res += 'digraph G {'
         res += 'rankdir="LR"'
         input_nodes = [(i, x) for i, x in enumerate(self.nodes) if x.role == 'input']
-        res += 'subgraph cluster_0 { style=filled; color=lightgrey; label="inputs";'
+        res += 'subgraph cluster_0 { style=filled; color=green; label="inputs";'
         for i, node in input_nodes:
             res += '{} [label="{}:{}"]'.format(i, i, node.role)
         res += '}'
@@ -124,7 +122,7 @@ class Genome:
         for conn in self.connections:
             res += '{} -> {} [label="{}"]'.format(conn.left_id, conn.right_id, conn.weight)
         output_nodes = [(i, x) for i, x in enumerate(self.nodes) if x.role == 'output']
-        res += 'subgraph cluster_1 { style=filled; color=lightgrey; label="outputs";'
+        res += 'subgraph cluster_1 { style=filled; color=red; label="outputs";'
         for i, node in output_nodes:
             res += '{} [label="{}:{}"]'.format(i, i, node.role)
         res += '}'
